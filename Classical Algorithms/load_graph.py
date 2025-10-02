@@ -1,36 +1,41 @@
 import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
+import weight
 
 def load_graph_from_csv(csv_path = "data_reduced.csv", truncate_at=84):
 
     # 1. Load CSV
-    df = pd.read_csv("data_reduced.csv", header=0, encoding="utf-8-sig", low_memory=False, sep=";")
+    df = pd.read_csv(csv_path, header=0, encoding="utf-8-sig", low_memory=False, sep=",")
     if truncate_at > 0:
         df = df.head(truncate_at)
 
     # 2. Build graph
-    G = nx.Graph()
+    G_pos = nx.Graph()
+    consumption = 0
 
     # --- Step B: Add prosumer nodes ---
     for idx, row in df.iterrows():
-        prosumer_node = f"Prosumer_{idx}"
-        G.add_node(prosumer_node, **row.to_dict(), type="prosumer")
+        if (weight.weight(row.to_dict()) > 0):
+            prosumer_node = f"Prosumer_{idx}"
+            G_pos.add_node(prosumer_node, **row.to_dict(), type="prosumer")
+        else:
+            consumption += weight.weight(row.to_dict())
+
 
 
     # --- Step C: Connect prosumers from different substations ---
-    prosumer_nodes = [n for n, attr in G.nodes(data=True) if attr["type"] == "prosumer"]
+    producers_nodes = [n for n, attr in G_pos.nodes(data=True) if attr["type"] == "prosumer"]
 
-    for i, p1 in enumerate(prosumer_nodes):
-        sub1 = G.nodes[p1]["sub_station"]
-        for p2 in prosumer_nodes[i+1:]:
-            sub2 = G.nodes[p2]["sub_station"]
+    for i, p1 in enumerate(producers_nodes):
+        sub1 = G_pos.nodes[p1]["substation_id"]
+        for p2 in producers_nodes[i+1:]:
+            sub2 = G_pos.nodes[p2]["substation_id"]
             if sub1 != sub2:
-                G.add_edge(p1, p2)
+                G_pos.add_edge(p1, p2)
 
-    return G
+    return consumption, G_pos
 
-G = load_graph_from_csv("data_reduced.csv", truncate_at=-1)
 
 # 3. Draw graph (simple layout)
 #plt.figure(figsize=(12, 8))

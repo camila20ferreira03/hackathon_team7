@@ -5,7 +5,7 @@ import weight
 import load_graph
 
 class GraphGeneticAlgorithm:
-    def __init__(self, graph, alpha=1, beta=1,
+    def __init__(self, graph, consumption=0, alpha=1, beta=1,
                  pop_size=50, n_gen=100, cx_prob=0.7, mut_prob=0.2, mut_indpb=0.05):
         self.G = graph
         self.n_nodes = self.G.number_of_nodes()
@@ -16,6 +16,7 @@ class GraphGeneticAlgorithm:
         self.cx_prob = cx_prob
         self.mut_prob = mut_prob
         self.mut_indpb = mut_indpb
+        self.consumption = consumption
 
         # DEAP setup
         creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
@@ -37,10 +38,9 @@ class GraphGeneticAlgorithm:
         subgraph = self.individual_to_graph(individual)
         if subgraph.number_of_edges() == 0:
             return (float('inf'),)
-        cost = sum(edge['consumption_kWh'] for u, v, edge in subgraph.edges(data=True))
-        weight_sum = sum(weight.weight(n) for n in subgraph.nodes())
+        weight_sum = sum(weight.weight_node(n) for n in subgraph.nodes())
         edges_count = subgraph.number_of_edges()
-        return (self.ALPHA*(1/edges_count) + self.BETA*(weight_sum + cost),)
+        return (self.ALPHA*(1/edges_count) + self.BETA*(weight_sum + self.consumption),)
 
     def run(self):
         population = self.toolbox.population(n=self.pop_size)
@@ -49,11 +49,11 @@ class GraphGeneticAlgorithm:
             offspring = list(map(self.toolbox.clone, offspring))
 
             # Crossover
-            for child1, child2 in zip(offspring[::2], offspring[1::2]):
-                if random.random() < self.cx_prob:
-                    self.toolbox.mate(child1, child2)
-                    del child1.fitness.values
-                    del child2.fitness.values
+            #for child1, child2 in zip(offspring[::2], offspring[1::2]):
+            #    if random.random() < self.cx_prob:
+            #        self.toolbox.mate(child1, child2)
+            #        del child1.fitness.values
+            #        del child2.fitness.values
 
             # Mutation
             for mutant in offspring:
@@ -74,10 +74,3 @@ class GraphGeneticAlgorithm:
         # Best individual
         best_ind = tools.selBest(population, 1)[0]
         return best_ind, best_ind.fitness.values[0]
-
-
-G = load_graph.load_graph_from_csv("data_reduced.csv", truncate_at=100_000)
-ga = GraphGeneticAlgorithm(G, alpha=1, beta=1, pop_size=50, n_gen=50)
-best_ind, best_fit = ga.run()
-print("Best individual:", best_ind)
-print("Fitness:", best_fit)

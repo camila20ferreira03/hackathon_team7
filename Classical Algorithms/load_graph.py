@@ -2,29 +2,21 @@ import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
 
-def load_graph_from_csv(csv_path = "data.csv", truncate_at=-1):
+def load_graph_from_csv(csv_path = "data_reduced.csv", truncate_at=84):
 
     # 1. Load CSV
-    df = pd.read_csv("data.csv", header=0, encoding="utf-8-sig", low_memory=False)
-
+    df = pd.read_csv("data_reduced.csv", header=0, encoding="utf-8-sig", low_memory=False, sep=";")
     if truncate_at > 0:
         df = df.head(truncate_at)
 
     # 2. Build graph
     G = nx.Graph()
 
-    # # --- Step A: Add substation nodes ---
-    # substations = df["sub_station"].unique()
-    # for s in substations:
-    #     G.add_node(f"Substation_{s}", type="substation")
-
     # --- Step B: Add prosumer nodes ---
     for idx, row in df.iterrows():
         prosumer_node = f"Prosumer_{idx}"
         G.add_node(prosumer_node, **row.to_dict(), type="prosumer")
-        # # connect prosumer to its substation
-        # substation_node = f"Substation_{row['sub_station']}"
-        # G.add_edge(prosumer_node, substation_node)
+
 
     # --- Step C: Connect prosumers from different substations ---
     prosumer_nodes = [n for n, attr in G.nodes(data=True) if attr["type"] == "prosumer"]
@@ -38,20 +30,20 @@ def load_graph_from_csv(csv_path = "data.csv", truncate_at=-1):
 
     return G
 
-G = load_graph_from_csv("data.csv", truncate_at=5)
+G = load_graph_from_csv("data_reduced.csv", truncate_at=-1)
 
 # 3. Draw graph (simple layout)
-plt.figure(figsize=(12, 8))
+#plt.figure(figsize=(12, 8))
 
-pos = nx.spring_layout(G, seed=42)
+#pos = nx.spring_layout(G, seed=42)
 
 # color by type
-colors = []
-for n, attr in G.nodes(data=True):
-    if attr["type"] == "substation":
-        colors.append("red")
-    else:
-        colors.append("blue")
+#colors = []
+#for n, attr in G.nodes(data=True):
+#    if attr["type"] == "substation":
+#        colors.append("red")
+#    else:
+#        colors.append("blue")
 
-nx.draw(G, pos, with_labels=True, node_color=colors, node_size=500, font_size=8)
-plt.show()
+#nx.draw(G, pos, with_labels=True, node_color=colors, node_size=500, font_size=8)
+#plt.show()

@@ -76,7 +76,8 @@ def load_features_from_csv(csv_path = "data.csv", truncate_at=-1) -> List[List[f
             cost_of_productors.append(0)
             co2_emmisions_by_productors.append(0)
         
-        # Para limitar el uso de mejoria y qubits en el simulador local
+        # Each productor will be a qubit, so we limit then right now because of memory
+        # Limitations in the Quantum Simulator
         if number_of_productors > 15:
             break
 

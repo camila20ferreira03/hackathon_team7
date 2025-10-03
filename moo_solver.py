@@ -2,8 +2,6 @@
 # CUÁNTICO (modificado)
 # ===========================
 import numpy as np
-import pandas as pd
-from pathlib import Path
 
 # --- Qiskit (Aer SamplerV2 si existe; si no, Sampler clásico) ---
 try:
@@ -16,7 +14,7 @@ except Exception:
 from qiskit import QuantumCircuit
 
 # ===========================
-# 2) QUBO (sin capacidad por subcentral)
+# 1) Mix different QUBO Matrixies between all objective Function
 # ===========================
 def get_blending_QUBO_weights(weights):
 
@@ -89,7 +87,7 @@ def combine_objectives_with_blending_weights(QUBO_quadratic_matrixes, QUBO_linea
     return QUBO_blended_matrix, QUBO_blended_vector, QUBO_blended_constant
 
 # ===========================
-# 3) QUBO → Ising
+# 2) Transform QUBO to Ising
 # ===========================
 def qubo_to_ising(QUBO_quadratic_matrix, QUBO_linear_vector, QUBO_constant):
     """Convierte QUBO (x∈{0,1}) a Ising (z∈{-1,1})."""
@@ -106,10 +104,10 @@ def qubo_to_ising(QUBO_quadratic_matrix, QUBO_linear_vector, QUBO_constant):
     return J_ising, h_ising, c_ising
     
 # ===========================
-# 4) QAOA
+# 3) Solve by QAOA
 # ===========================
 def get_transferred_angles(p=3, seed=0):
-    """Ángulos 'transferidos' (placeholders determinísticos)."""
+    """Random Angles for the Cirquit."""
     rng = np.random.default_rng(seed)
     gammas = (rng.random(p) * 0.6 + 0.2).tolist()
     betas  = (rng.random(p) * 0.6 + 0.2).tolist()
@@ -117,8 +115,7 @@ def get_transferred_angles(p=3, seed=0):
 
 def build_qaoa_circuit(J_ising, h_ising, num_layers, gammas, betas):
     """
-    QAOA para H = sum_i h_i Z_i + sum_{i<j} 2*J_ij Z_i Z_j.
-    Cost: Z/ZZ, Mixer: RX.
+    Build standar qaoa cirquit to solve Ising
     """
     number_of_qubits = len(h_ising)
     qc = QuantumCircuit(number_of_qubits)
@@ -147,7 +144,7 @@ def build_qaoa_circuit(J_ising, h_ising, num_layers, gammas, betas):
     return qc
 
 # ===========================
-# 5) Objetivos + Pareto
+# 4) Evaluate sample solutions by each objective
 # ===========================
 def evaluate_objectives(solution_candidate,
                         energy_productions,
@@ -291,7 +288,7 @@ def get_f5_value(solution_candidates_array,
     return float(np.sum(distribution_of_productors * solution_candidates_array))
 
 def filter_candidates_by_pareto_domination(objective_values, candidate_choices, eps=1e-6):
-    """Pareto con ε-dominancia (max), normalizado por rango."""
+    """Only use the results that are not dominated by another solution"""
     keep = []
 
     for i in range(objective_values.shape[0]):
@@ -307,28 +304,6 @@ def filter_candidates_by_pareto_domination(objective_values, candidate_choices, 
 
     return objective_values[keep], candidate_choices[keep]
 
-def dedup_bitstrings(Ys):
-    seen, out = set(), []
-    for y in Ys:
-        key = tuple(y.tolist())
-        if key not in seen:
-            seen.add(key)
-            out.append(y)
-    return out
-
-def dedup_by_objectives(F, Ys, rel_round=12):
-    if len(F) == 0:
-        return F, Ys
-    scale = np.max(np.abs(F), axis=0, keepdims=True) + 1e-12
-    Fr = np.round(F / scale, rel_round)
-    keys = [tuple(row) for row in Fr]
-    idx, seen = [], set()
-    for i, k in enumerate(keys):
-        if k not in seen:
-            seen.add(k)
-            idx.append(i)
-    return F[idx], [Ys[i] for i in idx]
-
 def remove_duplicate_solutions(counts, n):
     """Solo bitstrings únicos; no expandir multiplicidades."""
     Ys_unique = []
@@ -342,9 +317,10 @@ def remove_duplicate_solutions(counts, n):
     return Ys_unique
 
 # ===========================
-# 6) Sampling (Aer) + loop
+# 6) Sampling (Aer) (The Quantum Part)
 # ===========================
 def run_sampler_and_get_candidate_solutions(sampler, qc, shots):
+    # We should change this to actually run it in a quantum computing
     res = sampler.run([qc], shots=shots).result()
     if _SAMPLER_V2:
         counts = res[0].data.meas.get_counts()
@@ -422,7 +398,7 @@ def run_qaoa_sampling(QUBO_quadratic_matrixes, QUBO_linear_vectors,
     return Pareto_F, Pareto_Y
 
 # ===========================
-# 7) Ejecución de prueba
+# 7) Main Function
 # ===========================
 def get_best_control_signal(
     number_of_productors, 
@@ -457,7 +433,7 @@ def get_best_control_signal(
         number_of_solutions=1,
         number_angles=3,
         seed_angles=0,
-        fiabilidad_minima=-1e-3   # permite leve negativo en fiabilidad
+        fiabilidad_minima=-1e-3
     )
 
     return Pareto_F, Pareto_Y

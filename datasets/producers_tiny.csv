@@ -1,0 +1,4 @@
+prod_id,sub_id,is_renewable,cap_mw,cost_usd_per_mwh,co2_t_per_mwh
+P1,S1,1,8.0,40.0,0.02
+P2,S1,1,8.0,35.0,0.03
+P3,S1,0,5.0,25.0,0.6

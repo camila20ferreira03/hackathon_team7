@@ -37,7 +37,12 @@ def get_productors_coefficients(productors_by_stations: List[List[float]]):
     return productors_list, productors_distribution
 
 def get_linear_coefficients(total_consumption, productors_array, distribution_array, lambda_arg):
-    return 2 * total_consumption * productors_array - lambda_arg * distribution_array
+
+    rest = {}
+    for i in range(len(productors_array)):
+        rest[i] = 2 * total_consumption * productors_array[i] - lambda_arg * distribution_array[i]
+
+    return rest
 
 def get_quadratic_coefficients(total_consumption, productors_array, distribution_array, lambda_arg):
     return  {

@@ -3,9 +3,12 @@ from typing import Dict, Tuple, List, Optional
 import numpy as np
 
 def get_energy_value_of_prosumer(prosumer):
-    consumption = float(prosumer["consumption_kWh"])
-    generation = float(prosumer["generation_kWh"])
-    return generation - consumption 
+    consumption = float(prosumer["unsatisfied_consumption_kWh"])
+    generation = float(prosumer["excess_energy_kWh"])
+    if  consumption > 0:
+        return -consumption
+    else:
+        return generation
 
 def load_stations_from_csv(csv_path = "data.csv", truncate_at=-1) -> List[List[float]]:
 
@@ -34,9 +37,6 @@ def load_stations_from_csv(csv_path = "data.csv", truncate_at=-1) -> List[List[f
         station_list.append(stations[key])
 
     return station_list
-
-
-
 
 def load_features_from_csv(csv_path = "data.csv", truncate_at=-1) -> List[List[float]]:
 
@@ -77,7 +77,7 @@ def load_features_from_csv(csv_path = "data.csv", truncate_at=-1) -> List[List[f
             co2_emmisions_by_productors.append(0)
         
         # Para limitar el uso de mejoria y qubits en el simulador local
-        if number_of_productors > 27:
+        if number_of_productors > 15:
             break
 
     number_of_substations = len(seen_substations)

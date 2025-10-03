@@ -5,7 +5,7 @@ from  moo_solver import get_best_control_signal
 import time
 
 print("Loading Data")
-features_of_grid = load_features_from_csv("datasets/prosumer_dataset.csv", -1)
+features_of_grid = load_features_from_csv("datasets/simplified_dataset.csv", -1)
 print("Data Loaded")
 print()
 
